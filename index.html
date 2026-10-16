@@ -18,6 +18,18 @@
             position: relative;
         }
 
+        /* HIỆU ỨNG MÀN HÌNH CRT CŨ CHO TOÀN BỘ WEB */
+        body::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 99;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+
         .base64-hint {
             position: absolute;
             top: 20px;
@@ -39,6 +51,7 @@
             box-shadow: 0 0 8px rgba(0, 255, 102, 0.3);
         }
 
+        /* 1. KHUNG ĐĂNG NHẬP BAN ĐẦU */
         .terminal-box {
             background-color: #030508;
             border: 2px solid #00ff66;
@@ -47,18 +60,7 @@
             max-width: 480px;
             box-shadow: 0 0 25px rgba(0, 255, 102, 0.15);
             border-radius: 4px;
-            position: relative;
-        }
-
-        .terminal-box::before {
-            content: " ";
-            display: block;
-            position: absolute;
-            top: 0; left: 0; bottom: 0; right: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            z-index: 2;
-            background-size: 100% 2px, 3px 100%;
-            pointer-events: none;
+            display: block; /* Mặc định hiển thị */
         }
 
         .header-title {
@@ -135,6 +137,58 @@
             font-weight: bold;
         }
 
+        /* 2. KHUNG HỒ SƠ ẨN (BAN ĐẦU SẼ ẨN ĐI) */
+        .terminal-window {
+            width: 90%;
+            max-width: 800px;
+            border: 1px solid #00ff66;
+            background-color: #010203;
+            padding: 25px;
+            box-shadow: 0 0 20px rgba(0, 255, 102, 0.1);
+            display: none; /* Ban đầu ẩn */
+        }
+
+        .status-bar {
+            border-bottom: 1px solid #00ff66;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: rgba(0, 255, 102, 0.6);
+        }
+
+        #console-log {
+            line-height: 1.6;
+            margin-bottom: 30px;
+            white-space: pre-wrap;
+        }
+
+        #file-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-width: 400px;
+        }
+
+        .btn-file {
+            background-color: rgba(0, 255, 102, 0.1);
+            color: #00ff66;
+            border: 1px solid #00ff66;
+            padding: 15px;
+            text-align: left;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: pre-line;
+        }
+
+        .btn-file:hover {
+            background-color: #00ff66;
+            color: #010203;
+            box-shadow: 0 0 15px rgba(0, 255, 102, 0.4);
+            font-weight: bold;
+        }
+
         @keyframes typing {
             from { width: 0 }
             to { width: 100% }
@@ -148,9 +202,10 @@
 </head>
 <body>
 
-<div class="base64-hint" onclick="showHint()">[ MÃ HÓA BASE64 ]</div>
+<div class="base64-hint" id="hint-btn" onclick="showHint()">[ MÃ HÓA BASE64 ]</div>
 
-<div class="terminal-box">
+<!-- PHẦN GIAO DIỆN 1: ĐĂNG NHẬP -->
+<div class="terminal-box" id="login-screen">
     <div class="header-title">EXPERIMENTAL SUBJECTS</div>
     <div class="account-info">SYSTEM LOG // ACC: admin</div>
     
@@ -169,6 +224,15 @@
     <div class="status-log" id="log-screen"></div>
 </div>
 
+<!-- PHẦN GIAO DIỆN 2: HỒ SƠ TÀI LIỆU MẬT (CHỈ HIỂN THỊ KHI ĐĂNG NHẬP ĐÚNG) -->
+<div class="terminal-window" id="document-screen">
+    <div class="status-bar">
+        CONNECTED TO SYSTEM DATABASE // USER: admin // SECURITY LEVEL: OMNI
+    </div>
+    <div id="console-log">Đang giải mã phân vùng dữ liệu...</div>
+    <div id="file-container"></div>
+</div>
+
 <script>
     function showHint() {
         alert("HỆ THỐNG PHÁT HIỆN CHUỖI MÃ HÓA BỊ RÒ RỈ:\n\nbmkgd2F5\n\n(Hãy giải mã chuỗi này để tìm PASSWORD)");
@@ -182,13 +246,53 @@
         if (inputUser === "admin" && inputPass === "ni way") {
             logScreen.style.color = "#00ff66";
             logScreen.innerHTML = ">>> ACCESS GRANTED. LOADING DATA CORE...";
+            
+            // Xử lý gộp: Ẩn màn đăng nhập, hiện màn tài liệu sau 1.5 giây
             setTimeout(function() {
-                window.location.href = "./secret_document.html"; 
+                document.getElementById("login-screen").style.display = "none";
+                document.getElementById("hint-btn").style.display = "none";
+                document.getElementById("document-screen").style.display = "block";
+                
+                // Khởi chạy hiệu ứng nạp hồ sơ ẩn
+                loadSecretFiles();
             }, 1500);
         } else {
             logScreen.style.color = "#ff3333";
             logScreen.innerHTML = ">>> SECURITY ALERT: ACCESS DENIED.";
         }
+    }
+
+    // Hàm sinh nút bấm hồ sơ mật tự động sau khi đăng nhập thành công
+    function loadSecretFiles() {
+        const consoleLog = document.getElementById("console-log");
+        const fileContainer = document.getElementById("file-container");
+
+        setTimeout(() => {
+            consoleLog.innerHTML = ">>> Kết nối cơ sở dữ liệu thành công.\n>>> Đang quét phân vùng dữ liệu ẩn...";
+        }, 1000);
+
+        setTimeout(() => {
+            consoleLog.innerHTML += "\n>>> Đã tìm thấy danh sách tệp lưu trữ [DỰ ÁN: BEHIND]:";
+
+            // DANH SÁCH HỒ SƠ ĐƯỢC GỘP TẠI ĐÂY (DỄ DÀNG THÊM MỚI)
+            const danhSachHoSo = [
+                { ten: "behind-5", matKhau: "wve" }
+                // { ten: "behind-6", matKhau: "mật mã mới" } <-- Thêm hồ sơ tiếp theo tại đây
+            ];
+
+            danhSachHoSo.forEach(hoSo => {
+                const fileButton = document.createElement("button");
+                fileButton.className = "btn-file";
+                fileButton.innerText = `hồ sơ ${hoSo.ten}\nmật khẩu:${hoSo.matKhau}`;
+                
+                fileButton.onclick = function() {
+                    alert(`Đang truy cập hồ sơ mật của đối tượng ${hoSo.ten}...`);
+                };
+                
+                fileContainer.appendChild(fileButton);
+            });
+
+        }, 2500);
     }
 </script>
 
